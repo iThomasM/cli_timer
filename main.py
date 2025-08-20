@@ -80,6 +80,7 @@ class Timer():
     def generate_scramble(self, event):
         moves = {"3x3": ["R", "L", "F", "B", "D", "U"],
                  "2x2": ["R", "L", "F", "B", "D", "U"],
+                 "skewb": ["R", "L", "F", "B", "D", "U"],
                  "pyra": ["R", "L", "B", "F", "U", "D", "r", "l", "b", "f", "u", "d"],
                  "4x4": ["R", "L", "B", "F", "U", "D", "r", "l", "b", "f", "u", "d"],
                  "5x5": ["R", "L", "B", "F", "U", "D", "r", "l", "b", "f", "u", "d"],
