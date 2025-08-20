@@ -15,7 +15,11 @@ class Timer():
         keyboard.on_press_key("right", lambda _: self._change_index(1))
         keyboard.on_press_key("left", lambda _: self._change_index(-1))
 
-    def convert(time): 
+    def convert(self, time):
+        try:
+            time = float(time)
+        except:
+            return time
         mins = 0
         seconds = time
         while time > 59:
@@ -26,8 +30,9 @@ class Timer():
                     seconds -= 60 
                 mins += 1 
         if mins == 0:
-            return round(time, 3)
-        return f"{mins}:{seconds:02d}"
+            return time
+        
+        return f"{mins}:{round(seconds, 3)}"
     
     def save_data(self, data):
         try:
@@ -103,7 +108,7 @@ class Timer():
         while True:
             current_time = time.time()
             elapsed = round(current_time - start_time, 3)
-            print(elapsed, end="\r") 
+            print(self.convert(elapsed), end="\r") 
             time.sleep(0.01)
             if keyboard.is_pressed('space'):
                 if keyboard_presses == 1:
@@ -121,7 +126,7 @@ class Timer():
 
     def solve_check(self, solve_time):
         os.system('cls' if os.name == 'nt' else 'clear')
-        print(f"{solve_time}")
+        print(f"{self.convert(solve_time)}")
         print(f"+2 -> press 2")
         print(f"DNF -> press 3")
         print(f"OK -> press Enter")
@@ -147,9 +152,9 @@ class Timer():
             os.system('cls' if os.name == 'nt' else 'clear')
 
             ao5, ao12, pb = self.load_stats()
-            print(f"PB: {pb}s", end="    ")
-            print(f"Ao5: {ao5} seconds", end="    ")
-            print(f"Ao12: {ao12} seconds", end="    ")
+            print(f"PB: {self.convert(pb)}s", end="    ")
+            print(f"Ao5: {self.convert(ao5)} seconds", end="    ")
+            print(f"Ao12: {self.convert(ao12)} seconds", end="    ")
 
             scramble = self.generate_scramble(self.event)
             print("\n")
@@ -159,9 +164,9 @@ class Timer():
         os.system('cls' if os.name == 'nt' else 'clear')
 
         ao5, ao12, pb = self.load_stats()
-        print(f"PB: {pb}s", end="    ")
-        print(f"Ao5: {ao5} seconds", end="    ")
-        print(f"Ao12: {ao12} seconds", end="    ")
+        print(f"PB: {self.convert(pb)}s", end="    ")
+        print(f"Ao5: {self.convert(ao5)} seconds", end="    ")
+        print(f"Ao12: {self.convert(ao12)} seconds", end="    ")
 
         scramble = self.generate_scramble(self.event)
         print("\n")
