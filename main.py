@@ -15,6 +15,20 @@ class Timer():
         keyboard.on_press_key("right", lambda _: self._change_index(1))
         keyboard.on_press_key("left", lambda _: self._change_index(-1))
 
+    def convert(time): 
+        mins = 0
+        seconds = time
+        while time > 59:
+            if time >= 60: 
+                if seconds - 60 < 0: 
+                    break
+                else:
+                    seconds -= 60 
+                mins += 1 
+        if mins == 0:
+            return round(time, 3)
+        return f"{mins}:{seconds:02d}"
+    
     def save_data(self, data):
         try:
             with open(self.solve_file, "r") as f:
@@ -43,16 +57,20 @@ class Timer():
 
         times = [solve["time"] for solve in solves if solve["time"] != -1]
 
-        ao5, ao12 = "N/A", "N/A"
+        ao5, ao12, pb = "N/A", "N/A", "N/A"
+        try:
+            pb = min(times)
+        except ValueError:
+            pass
 
         if len(times) >= 5:
             last5 = times[-5:]
-            ao5 = (round((sum(last5) - max(last5) - min(last5)) / 3, 2))
+            ao5 = (round((sum(last5) - max(last5) - min(last5)) / 3, 3))
         if len(times) >= 12:
             last12 = times[-12:]
-            ao12 = (round((sum(last12) - max(last12) - min(last12)) / 10, 2))
+            ao12 = (round((sum(last12) - max(last12) - min(last12)) / 10, 3))
 
-        return ao5, ao12
+        return ao5, ao12, pb
     
     def generate_scramble(self, event):
         moves = {"3x3": ["R", "L", "F", "B", "D", "U"],
@@ -65,16 +83,18 @@ class Timer():
         modes = ["'", "2", ""]
         scramble_len = {"3x3": 25, "2x2": 12, "pyra": 12, "4x4": 35, "5x5": 42, "6x6": 50, "7x7": 60}
         scramble = []
-        last_move = None
+        last_move = []
 
         for _ in range(scramble_len[event]):
+            if len(last_move) > 2:
+                last_move.pop(0)
             move = random.choice(moves[event])
-            while move == last_move:
+            while move in last_move:
                 move = random.choice(moves[event])
 
             mode = random.choice(modes)
             scramble.append(move + mode)
-            last_move = move
+            last_move.append(move)
 
         return scramble
     
@@ -98,7 +118,6 @@ class Timer():
         end_time = self.timing(start_time)
         print(end_time)
         return end_time
-    
 
     def solve_check(self, solve_time):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -106,6 +125,7 @@ class Timer():
         print(f"+2 -> press 2")
         print(f"DNF -> press 3")
         print(f"OK -> press Enter")
+        print(f"Delete -> Del")
 
         while True:
             key = keyboard.read_key()
@@ -118,13 +138,16 @@ class Timer():
                 return -1
             elif key == 'enter':
                 return solve_time
+            elif key == 'delete':
+                return False
     
     def _change_index(self, amnt):
             self.index += amnt
             self.event = self.events[self.index]
             os.system('cls' if os.name == 'nt' else 'clear')
 
-            ao5, ao12 = self.load_stats()
+            ao5, ao12, pb = self.load_stats()
+            print(f"PB: {pb}s", end="    ")
             print(f"Ao5: {ao5} seconds", end="    ")
             print(f"Ao12: {ao12} seconds", end="    ")
 
@@ -135,7 +158,8 @@ class Timer():
     def main(self):
         os.system('cls' if os.name == 'nt' else 'clear')
 
-        ao5, ao12 = self.load_stats()
+        ao5, ao12, pb = self.load_stats()
+        print(f"PB: {pb}s", end="    ")
         print(f"Ao5: {ao5} seconds", end="    ")
         print(f"Ao12: {ao12} seconds", end="    ")
 
@@ -150,6 +174,8 @@ class Timer():
 
         prefinal_time = self.timer_startandstop()
         final_time = self.solve_check(prefinal_time)
+        if not final_time:
+            return
 
         solve_data = {"scramble": scramble,
                       "date": str(datetime.datetime.now()),
