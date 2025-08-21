@@ -11,9 +11,8 @@ class Timer():
         self.index = 0
         self.events = ["3x3", "2x2", "4x4", "5x5", "6x6", "7x7", "skewb", "pyra"]
         self.event = self.events[self.index]
-
-        keyboard.on_press_key("right", lambda _: self._change_index(1))
-        keyboard.on_press_key("left", lambda _: self._change_index(-1))
+        self.solve_list = []
+        self.in_menu = False
 
     def convert(self, time):
         try:
@@ -61,6 +60,7 @@ class Timer():
         print(f"Loaded {len(solves)} {self.event} solves", end="    ")
 
         times = [solve["time"] for solve in solves if solve["time"] != -1]
+        self.solve_list = times
 
         ao5, ao12, pb = "N/A", "N/A", "N/A"
         try:
@@ -87,7 +87,7 @@ class Timer():
                  "6x6": ["R", "L", "B", "F", "U", "D", "r", "l", "b", "f", "u", "d", "r2w", "l2w", "b2w", "f2w", "u2w", "d2w"],
                  "7x7": ["R", "L", "B", "F", "U", "D", "r", "l", "b", "f", "u", "d", "r2w", "l2w", "b2w", "f2w", "u2w", "d2w"]}
         modes = ["'", "2", ""]
-        scramble_len = {"3x3": 25, "2x2": 12, "pyra": 12, "4x4": 35, "5x5": 42, "6x6": 50, "7x7": 60}
+        scramble_len = {"3x3": 25, "2x2": 12, "pyra": 12, "4x4": 35, "5x5": 42, "6x6": 50, "7x7": 60, "skewb": 12}
         scramble = []
         last_move = []
 
@@ -106,10 +106,15 @@ class Timer():
     
     def timing(self, start_time):
         keyboard_presses = 1
+        move_cursor = True
         while True:
             current_time = time.time()
             elapsed = round(current_time - start_time, 3)
-            print(self.convert(elapsed), end="\r") 
+            if move_cursor:
+                print(f"\033[F{self.convert(elapsed)}", end="\r")
+                move_cursor = False
+            print(f"{self.convert(elapsed)}", end="\r")
+            
             time.sleep(0.01)
             if keyboard.is_pressed('space'):
                 if keyboard_presses == 1:
@@ -130,17 +135,15 @@ class Timer():
         print(f"{self.convert(solve_time)}")
         print(f"+2 -> press 2")
         print(f"DNF -> press 3")
-        print(f"OK -> press Enter")
         print(f"Delete -> Del")
+        print(f"OK -> press Enter")
 
         while True:
             key = keyboard.read_key()
             if key == '2':
                 solve_time += 2
-                print("+2 added")
                 return solve_time
             elif key == '3':
-                print("Marked as DNF")
                 return -1
             elif key == 'enter':
                 return solve_time
@@ -148,20 +151,30 @@ class Timer():
                 return False
     
     def _change_index(self, amnt):
+        try:
             self.index += amnt
             self.event = self.events[self.index]
-            os.system('cls' if os.name == 'nt' else 'clear')
+        except IndexError:
+            self.index = 0
+        os.system('cls' if os.name == 'nt' else 'clear')
+        self._print()
 
-            ao5, ao12, pb = self.load_stats()
-            print(f"PB: {self.convert(pb)}s", end="    ")
-            print(f"Ao5: {self.convert(ao5)} seconds", end="    ")
-            print(f"Ao12: {self.convert(ao12)} seconds", end="    ")
+    def _print_solves(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+        if not self.solve_list:
+            print("No data.")
+        else:
+            for i, s in enumerate(self.solve_list):
+                print(f"{i+1}) {self.convert(s)}")
+        
+        print("\ne -> Return")
+        
+        while True:
+            if keyboard.is_pressed('e'):
+                break
+        self._print()
 
-            scramble = self.generate_scramble(self.event)
-            print("\n")
-            print(" ".join(scramble))
-            
-    def main(self):
+    def _print(self):
         os.system('cls' if os.name == 'nt' else 'clear')
 
         ao5, ao12, pb = self.load_stats()
@@ -170,13 +183,19 @@ class Timer():
         print(f"Ao12: {self.convert(ao12)} seconds", end="    ")
 
         scramble = self.generate_scramble(self.event)
+
         print("\n")
         print(" ".join(scramble))
+        print("\nq -> View Solve List", end="\r")
+            
+    def main(self):
+        self.keyboard_events()
+
+        scramble = self._print()
 
         keyboard.wait('space')
         while keyboard.is_pressed('space'):
             time.sleep(0.01)
-
 
         prefinal_time = self.timer_startandstop()
         final_time = self.solve_check(prefinal_time)
@@ -188,6 +207,12 @@ class Timer():
                       "time": final_time}
 
         self.save_data(solve_data)
+
+
+    def keyboard_events(self):
+        keyboard.on_press_key("right", lambda _: self._change_index(1))
+        keyboard.on_press_key("left", lambda _: self._change_index(-1))
+        keyboard.on_press_key("q", lambda _: self._print_solves())
 
 if __name__ == "__main__":
     timer = Timer()
