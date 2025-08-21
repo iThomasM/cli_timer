@@ -12,7 +12,6 @@ class Timer():
         self.events = ["3x3", "2x2", "4x4", "5x5", "6x6", "7x7", "skewb", "pyra"]
         self.event = self.events[self.index]
         self.solve_list = []
-        self.in_menu = False
 
     def convert(self, time):
         try:
