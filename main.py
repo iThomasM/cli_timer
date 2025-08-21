@@ -11,9 +11,47 @@ class Timer():
         self.index = 0
         self.events = ["3x3", "2x2", "4x4", "5x5", "6x6", "7x7", "skewb", "pyra"]
         self.event = self.events[self.index]
+        self.solve_list = []
+        self.refresh = False
+        self.in_menu = False
 
-        keyboard.on_press_key("right", lambda _: self._change_index(1))
-        keyboard.on_press_key("left", lambda _: self._change_index(-1))
+        print("Press H for help", end="\r")
+        time.sleep(0.5)
+        print("Launching Program", end="\r")
+
+        self._keyboard_events()
+
+    def help_menu(self):
+        self.in_menu = True
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+        print("Space -> Start/Stop Timer")
+        print("Left/Right arrows -> Change Event")
+        print("Q -> View Solves")
+        print("E -> Exit menu")
+        print("\n(After Solve)")
+        print("2 -> Add +2 Penalty")
+        print("3 -> DNF the solve")
+        print("Enter -> Continue to next")
+        print("Del -> Delete the current solve")
+
+    def _keyboard_events(self):
+        keyboard.on_press_key("h", lambda _: self.help_menu() if not self.in_menu else None)
+        keyboard.on_press_key("right", lambda _: self._change_index(1) if not self.in_menu else None)
+        keyboard.on_press_key("left", lambda _: self._change_index(-1) if not self.in_menu else None)
+        keyboard.on_press_key("q", lambda _: self.print_solves() if not self.in_menu else None)
+        keyboard.on_press_key("e", lambda _: self.refresh_timer())
+
+    def refresh_timer(self):
+        self.refresh = True
+        self.in_menu = False
+
+    def print_solves(self):
+        self.in_menu = True
+        os.system('cls' if os.name == 'nt' else 'clear')
+        for index, solve in enumerate(self.solve_list):
+            print(f"{index+1}) {solve}")
+
 
     def convert(self, time):
         try:
@@ -61,11 +99,16 @@ class Timer():
         print(f"Loaded {len(solves)} {self.event} solves", end="    ")
 
         times = [solve["time"] for solve in solves if solve["time"] != -1]
+        self.solve_list = [self.convert(time) for time in times]
 
-        ao5, ao12, pb = "N/A", "N/A", "N/A"
+        ao5, ao12, pb, prev_solve = "N/A", "N/A", "N/A", "N/A"
         try:
             pb = min(times)
         except ValueError:
+            pass
+        try:
+            prev_solve = times[-1]
+        except Exception:
             pass
 
         if len(times) >= 5:
@@ -75,7 +118,7 @@ class Timer():
             last12 = times[-12:]
             ao12 = (round((sum(last12) - max(last12) - min(last12)) / 10, 3))
 
-        return ao5, ao12, pb
+        return ao5, ao12, pb, prev_solve
     
     def generate_scramble(self, event):
         moves = {"3x3": ["R", "L", "F", "B", "D", "U"],
@@ -87,7 +130,7 @@ class Timer():
                  "6x6": ["R", "L", "B", "F", "U", "D", "r", "l", "b", "f", "u", "d", "r2w", "l2w", "b2w", "f2w", "u2w", "d2w"],
                  "7x7": ["R", "L", "B", "F", "U", "D", "r", "l", "b", "f", "u", "d", "r2w", "l2w", "b2w", "f2w", "u2w", "d2w"]}
         modes = ["'", "2", ""]
-        scramble_len = {"3x3": 25, "2x2": 12, "pyra": 12, "4x4": 35, "5x5": 42, "6x6": 50, "7x7": 60}
+        scramble_len = {"3x3": 25, "2x2": 12, "pyra": 12, "4x4": 35, "5x5": 42, "6x6": 50, "7x7": 60, "skewb": 12}
         scramble = []
         last_move = []
 
@@ -137,10 +180,8 @@ class Timer():
             key = keyboard.read_key()
             if key == '2':
                 solve_time += 2
-                print("+2 added")
                 return solve_time
             elif key == '3':
-                print("Marked as DNF")
                 return -1
             elif key == 'enter':
                 return solve_time
@@ -148,31 +189,40 @@ class Timer():
                 return False
     
     def _change_index(self, amnt):
+        try:
             self.index += amnt
             self.event = self.events[self.index]
-            os.system('cls' if os.name == 'nt' else 'clear')
+        except IndexError:
+            self.index = 0
 
-            ao5, ao12, pb = self.load_stats()
-            print(f"PB: {self.convert(pb)}s", end="    ")
-            print(f"Ao5: {self.convert(ao5)} seconds", end="    ")
-            print(f"Ao12: {self.convert(ao12)} seconds", end="    ")
+        os.system('cls' if os.name == 'nt' else 'clear')
 
-            scramble = self.generate_scramble(self.event)
-            print("\n")
-            print(" ".join(scramble))
+        ao5, ao12, pb, prev_solve = self.load_stats()
+        print(f"Previous Solve: {self.convert(prev_solve)}s", end="    ")
+        print(f"PB: {self.convert(pb)}s", end="    ")
+        print(f"Ao5: {self.convert(ao5)}s", end="    ")
+        print(f"Ao12: {self.convert(ao12)}s", end="    ")
+
+        print("\n---------------------------------------------------------------------------------------------\n")
+
+        scramble = self.generate_scramble(self.event)
+        print(" ".join(scramble))
             
     def main(self):
         os.system('cls' if os.name == 'nt' else 'clear')
 
-        ao5, ao12, pb = self.load_stats()
+        self._keyboard_events()
+
+        ao5, ao12, pb, prev_solve = self.load_stats()
+        print(f"Previous Solve: {self.convert(prev_solve)}s", end="    ")
         print(f"PB: {self.convert(pb)}s", end="    ")
-        print(f"Ao5: {self.convert(ao5)} seconds", end="    ")
-        print(f"Ao12: {self.convert(ao12)} seconds", end="    ")
+        print(f"Ao5: {self.convert(ao5)}s", end="    ")
+        print(f"Ao12: {self.convert(ao12)}s", end="    ")
+
+        print("\n---------------------------------------------------------------------------------------------\n")
 
         scramble = self.generate_scramble(self.event)
-        print("\n")
         print(" ".join(scramble))
-
         keyboard.wait('space')
         while keyboard.is_pressed('space'):
             time.sleep(0.01)
@@ -193,3 +243,6 @@ if __name__ == "__main__":
     timer = Timer()
     while True:
         timer.main()
+        if timer.refresh:
+            timer.refresh = False
+            continue
