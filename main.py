@@ -169,8 +169,8 @@ def view_stats():
             time = round(time / 1000, 3)
         scramble = " ".join(solve[1])
         date = datetime.datetime.fromtimestamp(solve[3]).strftime("%Y-%m-%d %H:%M:%S")
-        print(f"{i}) {time} | {scramble} | {date}")
-    print("e -> Return")
+        print(f"{i}) {colored(time, 'green')} | {colored(scramble, 'yellow')} | {colored(date, 'magenta')}")
+    print("\ne -> Return")
 
 def print_data():
     global scramble, formatted_times, time_stats, in_main
@@ -184,13 +184,6 @@ def print_data():
     ao12 = None
     prev_solve = None
 
-    if time_stats:
-        if time_stats[0][0] == -1:
-            print("dude how can you dnf a solve. smh")
-        elif time_stats[0][0] == 2000:
-            print("cmon really, +2s dont count at home")
-        else:
-            print("okay you took the +2s dont count at home seriously didnt you")
 
     for time in times:
         formatted_times.append(time / 1000 if time is not None else None)
@@ -212,12 +205,21 @@ def print_data():
         ao12 = calculate_avgs(formatted_times, 12)
 
     print(f"----------------- {colored(session, 'red')} -------------------")
-    print(f"{colored("Previous", 'red')} - {prev_solve}    {colored("PB", 'blue')} - {single}    {colored("Ao5", 'blue')} - {ao5}    {colored("Ao12", 'blue')} - {ao12}")
+    print(f"{colored("Previous", 'grey',)} - {prev_solve}    {colored("PB", 'cyan')} - {single}    {colored("Ao5", 'blue')} - {ao5}    {colored("Ao12", 'blue')} - {ao12}")
     print(f"---------------------------------------------")
 
+    if time_stats:
+        if time_stats[0][0] == -1:
+            print("dude how can you dnf a solve. smh")
+        elif time_stats[0][0] == 2000:
+            print("cmon really, +2s dont count at home")
+        else:
+            print("okay you took the +2s dont count at home seriously didnt you")
+
     scramble = gen_scramble()
-    print(" ".join(scramble))
-    print("0.000", end="\r")
+    print()
+    print(colored(" ".join(scramble), 'yellow'))
+    print("\n0.000", end="\r")
 
 if __name__ == "__main__":
     try:
