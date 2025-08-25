@@ -7,22 +7,18 @@ import threading
 import os
 from termcolor import colored
 
-# // Load data --
-# // Print data -- 
-# // Generate Scramble --
-# // Wait for keyboard input --
-# // Save data
-
 solve_file = "august.json"
-session_num = 21
+session_num = 1
 session = f"session{session_num}"
 events = ["3x3", "2x2", "4x4", "5x5", "6x6", "7x7", "skewb", "pyra"]
 solving = False
 starting = False
+prev_stats = []
 time_stats = []
 times = []
-formatted_times = [time / 100 for time in times] if times else []
+formatted_times = [time / 1000 for time in times] if times else []
 scramble = None
+in_main = True
 event = "3x3"
 
 def save_data(time_stats):
@@ -33,12 +29,11 @@ def save_data(time_stats):
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         data = {}
 
-    print(data)
-    
     if session not in data:
         data[session] = []
 
     data[session].append(time_stats)
+    prev_stats.append(time_stats)
 
     with open(solve_file, "w") as f:
         json.dump(data, f, indent=4)
@@ -71,8 +66,10 @@ def load_data(solve_file):
     
     solves = data.get(session)
     if solves:
-        print(f"Loaded {len(solves)} solves")
-        times = [solve[0][1] for solve in solves]
+        for solve in solves:
+            time = solve[0][1] + solve[0][0]
+            times.append(time)
+            prev_stats.append(solve)
     else:
         times = []
 
@@ -84,13 +81,14 @@ def timer_start():
         print(round(current_time - start_time, 3), end="\r")
         time.sleep(0.01)
     result = current_time - start_time
-    time_stats = [[0, int(result * 100)], [" ".join(scramble.copy())], "", int(datetime.datetime.now().timestamp())]
+    time_stats = [[0, int(result * 1000 / 10) * 10], [" ".join(scramble.copy())], "", int(datetime.datetime.now().timestamp())]
 
     scramble = gen_scramble()
     solve_check(time_stats, result)
 
 def solve_check(time_stats, result):
-    global times
+    global times, in_main
+    in_main = False
     os.system('cls' if os.name == 'nt' else 'clear')
 
     print(round(result, 3))
@@ -101,7 +99,7 @@ def solve_check(time_stats, result):
     choice = input("").strip()
 
     if choice == "2":
-        time_stats[0][1] += 200
+        time_stats[0][0] = 2000
     elif choice == "3":
         time_stats[0][0] = -1
     else:
@@ -109,20 +107,30 @@ def solve_check(time_stats, result):
     
     save_data(time_stats)
 
-    times.append(time_stats[0][1])
+    time = get_time(time_stats)
+
+    times.append(time)
 
     print_data()
 
 def on_press(key):
     global solving, starting
     if key == keyboard.Key.space:
-        if not solving:
-            starting = True
-            print(colored("0.000", 'green'), end="\r")
-            return
-        else:
-            solving = False 
-            
+        if in_main:
+            if not solving:
+                starting = True
+                print(colored("0.000", 'green'), end="\r")
+                return
+            else:
+                solving = False 
+    try:
+        if key.char == 'q':
+            view_stats()
+        if key.char == 'e':
+            print_data()
+    except Exception:
+        pass
+   
 def on_release(key):
     global solving, starting
     if key == keyboard.Key.space:
@@ -131,28 +139,77 @@ def on_release(key):
             threading.Thread(target=timer_start).start()
             starting = False
 
-def print_data():
-    global scramble, formatted_times
-    os.system('cls' if os.name == 'nt' else 'clear')
-    formatted_times = [time / 100 for time in times] if times else []
+def get_time(solve):
+    penalty = solve[0][0]
+    base_time = solve[0][1]
 
+    if penalty == -1:
+        return None
+    return base_time + penalty
+
+def calculate_avgs(solves, n):
+    last_n = solves[-n:]
+    dnfs = sum(1 for time in last_n if time is None)
+    if dnfs >= 2:
+        return "DNF"
+    
+    avg = [time if time is not None else float("inf") for time in last_n]
+
+    return(round((sum(avg) - min(avg) - max(avg)) / (n-2), 3))
+
+def view_stats():
+    global prev_stats, in_main
+    in_main = False
+    os.system('cls' if os.name == 'nt' else 'clear')
+    for i, solve in enumerate(prev_stats, 1):
+        time = get_time(solve)
+        if time is None:
+            time = "DNF"
+        else:
+            time = round(time / 1000, 3)
+        scramble = " ".join(solve[1])
+        date = datetime.datetime.fromtimestamp(solve[3]).strftime("%Y-%m-%d %H:%M:%S")
+        print(f"{i}) {time} | {scramble} | {date}")
+    print("e -> Return")
+
+def print_data():
+    global scramble, formatted_times, time_stats, in_main
+    in_main = True
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+    formatted_times = []
 
     single = None
     ao5 = None
     ao12 = None
     prev_solve = None
 
+    if time_stats:
+        if time_stats[0][0] == -1:
+            print("dude how can you dnf a solve. smh")
+        elif time_stats[0][0] == 2000:
+            print("cmon really, +2s dont count at home")
+        else:
+            print("okay you took the +2s dont count at home seriously didnt you")
+
+    for time in times:
+        formatted_times.append(time / 1000 if time is not None else None)
+
     if formatted_times:
-        single = min(formatted_times)
         prev_solve = formatted_times[-1]
+        if not prev_solve:
+            prev_solve = "DNF"
+        try:
+            single = min([time for time in formatted_times if time is not None])
+        except:
+            single = "DNF"
+
     if len(formatted_times) >= 5:
-        last5 = formatted_times[-5:]
-        ao5 = ((sum(last5) - min(last5) - max(last5)) / 3)
-        ao5 = round(ao5, 3)
+        ao5 = calculate_avgs(formatted_times, 5)
+        if ao5 is None:
+            ao5 = "DNF"
     if len(formatted_times) >= 12:
-        last12 = formatted_times[-12:]
-        last12 = ((sum(last12) - min(last12) - min(last12) / 10))
-        last12 = round(last12, 3)
+        ao12 = calculate_avgs(formatted_times, 12)
 
     print(f"----------------- {colored(session, 'red')} -------------------")
     print(f"{colored("Previous", 'red')} - {prev_solve}    {colored("PB", 'blue')} - {single}    {colored("Ao5", 'blue')} - {ao5}    {colored("Ao12", 'blue')} - {ao12}")
