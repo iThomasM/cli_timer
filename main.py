@@ -6,6 +6,7 @@ import datetime
 import threading
 import os
 from termcolor import colored
+import sys
 
 solve_file = "august.json"
 session_num = 1
@@ -19,7 +20,9 @@ times = []
 formatted_times = [time / 1000 for time in times] if times else []
 scramble = None
 in_main = True
+time_check = False
 event = "3x3"
+choice = None
 
 def save_data(time_stats):
     global solve_file
@@ -83,11 +86,12 @@ def timer_start():
     result = current_time - start_time
     time_stats = [[0, int(result * 1000 / 10) * 10], [" ".join(scramble.copy())], "", int(datetime.datetime.now().timestamp())]
 
-    scramble = gen_scramble()
     solve_check(time_stats, result)
 
 def solve_check(time_stats, result):
-    global times, in_main
+    global times, in_main, time_check, choice
+    choice = None
+    time_check = True
     in_main = False
     os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -96,25 +100,28 @@ def solve_check(time_stats, result):
     print("3 -> DNF")
     print("Enter -> Continue")
 
-    choice = input("").strip()
+    while True:
+        if choice in ('2', '3', ''):
+            break
+        time.sleep(0.01)
 
     if choice == "2":
         time_stats[0][0] = 2000
     elif choice == "3":
         time_stats[0][0] = -1
     else:
-        pass 
-    
+        pass
+
+    time_check = False
     save_data(time_stats)
 
-    time = get_time(time_stats)
-
-    times.append(time)
+    t = get_time(time_stats)
+    times.append(t)
 
     print_data()
 
 def on_press(key):
-    global solving, starting
+    global solving, starting, time_check, choice
     if key == keyboard.Key.space:
         if in_main:
             if not solving:
@@ -122,12 +129,20 @@ def on_press(key):
                 print(colored("0.000", 'green'), end="\r")
                 return
             else:
-                solving = False 
+                solving = False
+    if time_check:
+        if key == keyboard.Key.enter:
+            choice = ''
     try:
         if key.char == 'q':
             view_stats()
         if key.char == 'e':
             print_data()
+        if time_check:
+            if key.char == '2':
+                choice = '2'
+            elif key.char == '3':
+                choice = '3'
     except Exception:
         pass
    
@@ -153,9 +168,13 @@ def calculate_avgs(solves, n):
     if dnfs >= 2:
         return "DNF"
     
-    avg = [time if time is not None else float("inf") for time in last_n]
+    avg = [time if time is not None else float('inf') for time in last_n]
 
-    return(round((sum(avg) - min(avg) - max(avg)) / (n-2), 3))
+    min_time = min(time for time in avg if time != float('inf'))
+    max_time = max(avg)
+    wca_avg = sum(avg) - min_time - max_time
+
+    return round(wca_avg / (n - 2), 3)
 
 def view_stats():
     global prev_stats, in_main
@@ -183,7 +202,6 @@ def print_data():
     ao5 = None
     ao12 = None
     prev_solve = None
-
 
     for time in times:
         formatted_times.append(time / 1000 if time is not None else None)
