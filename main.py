@@ -10,7 +10,6 @@ from termcolor import colored
 solve_file = "solves.json"
 session_num = 1
 session = f"session{session_num}"
-events = ["3x3", "2x2", "4x4", "5x5", "6x6", "7x7", "skewb", "pyra"]
 solving = False
 starting = False
 prev_stats = []
@@ -20,7 +19,7 @@ formatted_times = [time / 1000 for time in times] if times else []
 scramble = None
 in_main = True
 time_check = False
-event = "3x3"
+event = None
 choice = None
 
 def save_data(time_stats):
@@ -41,31 +40,56 @@ def save_data(time_stats):
         json.dump(data, f, indent=4)
 
 def gen_scramble():
+    global event
     scramble = []
-    scramble_len = random.randint(25, 28)
     last_move = []
-    moves = ["R", "L", "U", "D", "F", "B"]
     dirs = ["", "2", "'"]
-    for _ in range(scramble_len):
-        if len(last_move) > 2:
-            last_move.pop(0)
-        move = random.choice(moves)
-        while move in last_move:
+    if event == None:
+        moves = ["R", "L", "U", "D", "F", "B"]
+        scramble_len = random.randint(25, 28)
+        for _ in range(scramble_len):
+            if len(last_move) > 2:
+                last_move.pop(0)
             move = random.choice(moves)
-        direction = random.choice(dirs)
-        scramble.append(move + direction)
-        last_move.append(move.upper())
+            while move in last_move:
+                move = random.choice(moves)
+            direction = random.choice(dirs)
+            scramble.append(move + direction)
+            last_move.append(move.upper())
+    elif event == "222so":
+        moves = ["R", "L", "U", "D", "F"]
+        scramble_len = 12
+        for _ in range(scramble_len):
+            if len(last_move) > 2:
+                last_move.pop(0)
+            move = random.choice(moves)
+            while move in last_move:
+                move = random.choice(moves)
+            direction = random.choice(dirs)
+            scramble.append(move + direction)
+            last_move.append(move.upper())
 
     return scramble
 
 def load_data(solve_file):
-    global times
+    global times, event
     try:
         with open(solve_file) as f:
             data = json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
             data = {}
     
+    try:
+        session_data_str = data["properties"]["sessionData"]
+        session_data = json.loads(session_data_str)
+        session_info = session_data[str(session_num)]
+        event = session_info["opt"]["scrType"]
+        if not event:
+            event = None
+    except Exception:
+        event = None
+        # // mos perto add a fucking feature to create these stats bitch
+
     solves = data.get(session)
     if solves:
         for solve in solves:
@@ -233,7 +257,7 @@ def print_data():
     if len(formatted_times) >= 12:
         ao12 = calculate_avgs(formatted_times, 12)
 
-    print(f"----------------- {colored(session, 'red')} -------------------")
+    print(f"----------------- {colored(session, 'red')} === {colored(event, 'blue')} -------------------")
     print(f"{colored("Previous", 'grey',)} - {prev_solve}    {colored("PB", 'cyan')} - {single}    {colored("Ao5", 'blue')} - {ao5}    {colored("Ao12", 'blue')} - {ao12}")
     print(f"---------------------------------------------")
 
