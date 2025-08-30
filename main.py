@@ -6,9 +6,8 @@ import datetime
 import threading
 import os
 from termcolor import colored
-import sys
 
-solve_file = "august.json"
+solve_file = "solves.json"
 session_num = 1
 session = f"session{session_num}"
 events = ["3x3", "2x2", "4x4", "5x5", "6x6", "7x7", "skewb", "pyra"]
@@ -133,6 +132,10 @@ def on_press(key):
     if time_check:
         if key == keyboard.Key.enter:
             choice = ''
+    if key == keyboard.Key.right:
+        change_sess(1)
+    elif key == keyboard.Key.left:
+        change_sess(-1)
     try:
         if key.char == 'q':
             view_stats()
@@ -190,6 +193,14 @@ def view_stats():
         date = datetime.datetime.fromtimestamp(solve[3]).strftime("%Y-%m-%d %H:%M:%S")
         print(f"{i}) {colored(time, 'green')} | {colored(scramble, 'yellow')} | {colored(date, 'magenta')}")
     print("\ne -> Return")
+
+
+def change_sess(n):
+    global session, session_num
+    session_num += n
+    session = f"session{session_num}"
+    load_data(solve_file)
+    print_data()
 
 def print_data():
     global scramble, formatted_times, time_stats, in_main
