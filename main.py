@@ -16,6 +16,8 @@ prev_stats = []
 time_stats = []
 times = []
 formatted_times = [time / 1000 for time in times] if times else []
+EVENTS = [None, "222so", "444wca", "555wca", "666wca", "777wca", "mgmp", "pyrso", "skbso", "sqrs"]
+event_index = 0
 scramble = None
 in_main = True
 time_check = False
@@ -153,13 +155,21 @@ def on_press(key):
                 return
             else:
                 solving = False
+
     if time_check:
         if key == keyboard.Key.enter:
             choice = ''
+
     if key == keyboard.Key.right:
         change_sess(1)
     elif key == keyboard.Key.left:
         change_sess(-1)
+
+    if key == keyboard.Key.up:
+        change_event(1)
+    elif key == keyboard.Key.down:
+        change_event(-1)
+
     try:
         if key.char == 'q':
             view_stats()
@@ -225,6 +235,15 @@ def change_sess(n):
     session = f"session{session_num}"
     load_data(solve_file)
     print_data()
+
+def change_event(n):
+    global EVENTS, event_index, event
+    event_index += n
+    try:
+        event = EVENTS[event_index]
+        
+    except:
+        pass
 
 def print_data():
     global scramble, formatted_times, time_stats, in_main
