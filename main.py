@@ -41,37 +41,6 @@ def save_data(time_stats):
     with open(solve_file, "w") as f:
         json.dump(data, f, indent=4)
 
-def gen_scramble():
-    global event
-    scramble = []
-    last_move = []
-    dirs = ["", "2", "'"]
-    if event == None:
-        moves = ["R", "L", "U", "D", "F", "B"]
-        scramble_len = random.randint(25, 28)
-        for _ in range(scramble_len):
-            if len(last_move) > 2:
-                last_move.pop(0)
-            move = random.choice(moves)
-            while move in last_move:
-                move = random.choice(moves)
-            direction = random.choice(dirs)
-            scramble.append(move + direction)
-            last_move.append(move.upper())
-    elif event == "222so":
-        moves = ["R", "L", "U", "D", "F"]
-        scramble_len = 12
-        for _ in range(scramble_len):
-            if len(last_move) > 2:
-                last_move.pop(0)
-            move = random.choice(moves)
-            while move in last_move:
-                move = random.choice(moves)
-            direction = random.choice(dirs)
-            scramble.append(move + direction)
-            last_move.append(move.upper())
-
-    return scramble
 
 def load_data(solve_file):
     global times, event
@@ -100,6 +69,60 @@ def load_data(solve_file):
             prev_stats.append(solve)
     else:
         times = []
+
+def properties(data):
+    if "properties" not in data:
+        data["properties"] = {}
+    if "sessionData" not in data["properties"]:
+        data["properties"]["sessionData"] = json.dumps({})
+
+    try:
+        session_data = json.loads(data["properties"]["sessionData"])
+    except Exception:
+        session_data = {}
+    
+    if str(session_num) not in session_data:
+        session_data[str(session_num)] = {"opt": {"scrType": ""}}
+    elif "opt" not in session_data[str(session_num)]:
+        session_data[str(session_num)] = {"opt": {"scrType": ""}}
+    elif "scrType" not in session_data[str(session_num)]["opt"]:
+        session_data[str(session_num)]["opt"]["scrType"] = ""
+
+    return session_data
+
+def gen_scramble():
+    global event
+    scramble = []
+    last_move = []
+    dirs = ["", "2", "'"]
+    if event == None:
+        moves = ["R", "L", "U", "D", "F", "B"]
+        scramble_len = random.randint(25, 28)
+        for _ in range(scramble_len):
+            if len(last_move) > 2:
+                last_move.pop(0)
+            move = random.choice(moves)
+            while move in last_move:
+                move = random.choice(moves)
+            direction = random.choice(dirs)
+            scramble.append(move + direction)
+            last_move.append(move.upper())
+            
+    elif event == "222so":
+        moves = ["R", "L", "U", "D", "F"]
+        scramble_len = 12
+        for _ in range(scramble_len):
+            if len(last_move) > 2:
+                last_move.pop(0)
+            move = random.choice(moves)
+            while move in last_move:
+                move = random.choice(moves)
+            direction = random.choice(dirs)
+            scramble.append(move + direction)
+            last_move.append(move.upper())
+
+    return scramble
+
 
 def timer_start():
     global solving, time_stats, scramble
@@ -230,8 +253,11 @@ def view_stats():
 
 
 def change_sess(n):
-    global session, session_num
-    session_num += n
+    global session, session_num, EVENTS, event_index, session_num, solve_file
+    i = session_num + n
+    if i < 1:
+        return
+    session_num = i
     session = f"session{session_num}"
     load_data(solve_file)
     print_data()
@@ -239,11 +265,22 @@ def change_sess(n):
 def change_event(n):
     global EVENTS, event_index, event
     event_index += n
+    event = EVENTS[event_index]
+
     try:
-        event = EVENTS[event_index]
-        
-    except:
-        pass
+        with open(solve_file) as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        data = {}
+
+    session_data = properties(data)
+    session_data[str(session_num)]["opt"]["scrType"] = "" if event is None else event
+    data["properties"]["sessionData"] = json.dumps(session_data)
+
+    with open(solve_file, "w") as f:
+        json.dump(data, f, indent=4)
+
+    print_data()
 
 def print_data():
     global scramble, formatted_times, time_stats, in_main
