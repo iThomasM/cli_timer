@@ -24,6 +24,8 @@ time_check = False
 event = None
 choice = None
 
+# // Data Handling
+
 def save_data(time_stats):
     global solve_file
     try:
@@ -59,9 +61,10 @@ def load_data(solve_file):
             event = None
     except Exception:
         event = None
-        # // mos perto add a fucking feature to create these stats bitch
 
     solves = data.get(session)
+    times = []
+    prev_stats.clear()
     if solves:
         for solve in solves:
             time = solve[0][1] + solve[0][0]
@@ -69,6 +72,8 @@ def load_data(solve_file):
             prev_stats.append(solve)
     else:
         times = []
+
+# // Properties Handling
 
 def properties(data):
     if "properties" not in data:
@@ -123,6 +128,7 @@ def gen_scramble():
 
     return scramble
 
+# // Timer Functions
 
 def timer_start():
     global solving, time_stats, scramble
@@ -146,10 +152,11 @@ def solve_check(time_stats, result):
     print(round(result, 3))
     print("2 -> +2 Penalty")
     print("3 -> DNF")
+    print("Backspace -> Delete")
     print("Enter -> Continue")
 
     while True:
-        if choice in ('2', '3', ''):
+        if choice in ('2', '3', '', 'backspace'):
             break
         time.sleep(0.01)
 
@@ -157,6 +164,10 @@ def solve_check(time_stats, result):
         time_stats[0][0] = 2000
     elif choice == "3":
         time_stats[0][0] = -1
+    elif choice == "backspace":
+        time_check = False
+        print_data()
+        return
     else:
         pass
 
@@ -167,6 +178,8 @@ def solve_check(time_stats, result):
     times.append(t)
 
     print_data()
+
+# // Key Listener
 
 def on_press(key):
     global solving, starting, time_check, choice
@@ -182,6 +195,8 @@ def on_press(key):
     if time_check:
         if key == keyboard.Key.enter:
             choice = ''
+        elif key == keyboard.Key.backspace:
+            choice = 'backspace'
 
     if key == keyboard.Key.right:
         change_sess(1)
@@ -198,6 +213,8 @@ def on_press(key):
             view_stats()
         if key.char == 'e':
             print_data()
+        if key.char == 'h':
+            help_menu()
         if time_check:
             if key.char == '2':
                 choice = '2'
@@ -213,6 +230,8 @@ def on_release(key):
             solving = True
             threading.Thread(target=timer_start).start()
             starting = False
+
+# // Time Calculations
 
 def get_time(solve):
     penalty = solve[0][0]
@@ -236,21 +255,7 @@ def calculate_avgs(solves, n):
 
     return round(wca_avg / (n - 2), 3)
 
-def view_stats():
-    global prev_stats, in_main
-    in_main = False
-    os.system('cls' if os.name == 'nt' else 'clear')
-    for i, solve in enumerate(prev_stats, 1):
-        time = get_time(solve)
-        if time is None:
-            time = "DNF"
-        else:
-            time = round(time / 1000, 3)
-        scramble = " ".join(solve[1])
-        date = datetime.datetime.fromtimestamp(solve[3]).strftime("%Y-%m-%d %H:%M:%S")
-        print(f"{i}) {colored(time, 'green')} | {colored(scramble, 'yellow')} | {colored(date, 'magenta')}")
-    print("\ne -> Return")
-
+# // Change Session / Event
 
 def change_sess(n):
     global session, session_num, EVENTS, event_index, session_num, solve_file
@@ -281,6 +286,34 @@ def change_event(n):
         json.dump(data, f, indent=4)
 
     print_data()
+
+# // Print Data
+
+def help_menu():
+    global in_main
+    in_main = False
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("\nGeneral:\n")
+    print("e -> Return")
+    print("q -> View Session Data")
+    print("\nIn Main Menu:\n")
+    print("Left/Right -> Change Session by one")
+    print("Up/Down -> Change event by one")
+
+def view_stats():
+    global prev_stats, in_main
+    in_main = False
+    os.system('cls' if os.name == 'nt' else 'clear')
+    for i, solve in enumerate(prev_stats, 1):
+        time = get_time(solve)
+        if time is None:
+            time = "DNF"
+        else:
+            time = round(time / 1000, 3)
+        scramble = " ".join(solve[1])
+        date = datetime.datetime.fromtimestamp(solve[3]).strftime("%Y-%m-%d %H:%M:%S")
+        print(f"{i}) {colored(time, 'green')} | {colored(scramble, 'yellow')} | {colored(date, 'magenta')}")
+    print("\ne -> Return")
 
 def print_data():
     global scramble, formatted_times, time_stats, in_main
