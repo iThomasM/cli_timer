@@ -6,6 +6,9 @@ import datetime
 import threading
 import os
 from termcolor import colored
+from pyTwistyScrambler import (scrambler333, scrambler222, scrambler444,
+                                scrambler555, scrambler666, scrambler777,
+                                skewbScrambler, megaminxScrambler, squareOneScrambler, pyraminxScrambler)
 
 solve_file = "solves.json"
 session_num = 1
@@ -23,6 +26,17 @@ in_main = True
 time_check = False
 event = None
 choice = None
+
+scramble_types = {None: scrambler333.get_WCA_scramble(),
+                  "222so": scrambler222.get_WCA_scramble(),
+                  "444wca": scrambler444.get_WCA_scramble(),
+                  "555wca": scrambler555.get_WCA_scramble(),
+                  "666wca": scrambler666.get_WCA_scramble(),
+                  "777wca": scrambler777.get_WCA_scramble(),
+                  "skbso": skewbScrambler.get_WCA_scramble(),
+                  "mgmp": megaminxScrambler.get_WCA_scramble(),
+                  "pyrso": pyraminxScrambler.get_WCA_scramble(),
+                  "sqrs": squareOneScrambler.get_WCA_scramble()}
 
 # // Data Handling
 
@@ -95,37 +109,10 @@ def properties(data):
 
     return session_data
 
-def gen_scramble():
+def get_scramble():
     global event
     scramble = []
-    last_move = []
-    dirs = ["", "2", "'"]
-    if event == None:
-        moves = ["R", "L", "U", "D", "F", "B"]
-        scramble_len = random.randint(25, 28)
-        for _ in range(scramble_len):
-            if len(last_move) > 2:
-                last_move.pop(0)
-            move = random.choice(moves)
-            while move in last_move:
-                move = random.choice(moves)
-            direction = random.choice(dirs)
-            scramble.append(move + direction)
-            last_move.append(move.upper())
-            
-    elif event == "222so":
-        moves = ["R", "L", "U", "D", "F"]
-        scramble_len = 12
-        for _ in range(scramble_len):
-            if len(last_move) > 2:
-                last_move.pop(0)
-            move = random.choice(moves)
-            while move in last_move:
-                move = random.choice(moves)
-            direction = random.choice(dirs)
-            scramble.append(move + direction)
-            last_move.append(move.upper())
-
+    scramble.append(scramble_types.get(event))
     return scramble
 
 # // Timer Functions
@@ -269,7 +256,7 @@ def change_sess(n):
 
 def change_event(n):
     global EVENTS, event_index, event
-    event_index += n
+    event_index = (event_index + n) % len(EVENTS)
     event = EVENTS[event_index]
 
     try:
@@ -358,7 +345,7 @@ def print_data():
         else:
             print("okay you took the +2s dont count at home seriously didnt you")
 
-    scramble = gen_scramble()
+    scramble = get_scramble()
     print()
     print(colored(" ".join(scramble), 'yellow'))
     print("\n0.000", end="\r")
