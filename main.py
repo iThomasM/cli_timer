@@ -1,7 +1,6 @@
 from pynput import keyboard
 import json
 import time
-import random
 import datetime
 import threading
 import os
@@ -10,7 +9,7 @@ from pyTwistyScrambler import (scrambler333, scrambler222, scrambler444,
                                 scrambler555, scrambler666, scrambler777,
                                 skewbScrambler, megaminxScrambler, squareOneScrambler, pyraminxScrambler)
 
-solve_file = "solves.json"
+solve_file = "cstimer.json"
 session_num = 1
 session = f"session{session_num}"
 solving = False
@@ -20,6 +19,7 @@ time_stats = []
 times = []
 formatted_times = [time / 1000 for time in times] if times else []
 EVENTS = [None, "222so", "444wca", "555wca", "666wca", "777wca", "mgmp", "pyrso", "skbso", "sqrs"]
+EVENT_NAMES = ["3x3", "2x2", "4x4", "5x5", "6x6", "7x7", "Megaminx", "Pyraminx", "Skewb", "Sq-1"]
 event_index = 0
 scramble = None
 in_main = True
@@ -27,16 +27,16 @@ time_check = False
 event = None
 choice = None
 
-scramble_types = {None: scrambler333.get_WCA_scramble(),
-                  "222so": scrambler222.get_WCA_scramble(),
-                  "444wca": scrambler444.get_WCA_scramble(),
-                  "555wca": scrambler555.get_WCA_scramble(),
-                  "666wca": scrambler666.get_WCA_scramble(),
-                  "777wca": scrambler777.get_WCA_scramble(),
-                  "skbso": skewbScrambler.get_WCA_scramble(),
-                  "mgmp": megaminxScrambler.get_WCA_scramble(),
-                  "pyrso": pyraminxScrambler.get_WCA_scramble(),
-                  "sqrs": squareOneScrambler.get_WCA_scramble()}
+scramble_types = {None: scrambler333.get_WCA_scramble,
+                  "222so": scrambler222.get_WCA_scramble,
+                  "444wca": scrambler444.get_random_state_scramble,
+                  "555wca": scrambler555.get_WCA_scramble,
+                  "666wca": scrambler666.get_WCA_scramble,
+                  "777wca": scrambler777.get_WCA_scramble,
+                  "skbso": skewbScrambler.get_WCA_scramble,
+                  "mgmp": megaminxScrambler.get_WCA_scramble,
+                  "pyrso": pyraminxScrambler.get_WCA_scramble,
+                  "sqrs": squareOneScrambler.get_WCA_scramble}
 
 # // Data Handling
 
@@ -111,9 +111,8 @@ def properties(data):
 
 def get_scramble():
     global event
-    scramble = []
-    scramble.append(scramble_types.get(event))
-    return scramble
+    scramble = scramble_types.get(event)
+    return [scramble()] if scramble else [scrambler333.get_WCA_scramble()]
 
 # // Timer Functions
 
@@ -309,7 +308,7 @@ def print_data():
 
     formatted_times = []
 
-    single = None
+    single = float("inf")
     ao5 = None
     ao12 = None
     prev_solve = None
@@ -333,7 +332,7 @@ def print_data():
     if len(formatted_times) >= 12:
         ao12 = calculate_avgs(formatted_times, 12)
 
-    print(f"----------------- {colored(session, 'red')} === {colored(event, 'blue')} -------------------")
+    print(f"----------------- {colored(session, 'red')} === {colored(EVENT_NAMES[event_index], 'blue')} -------------------")
     print(f"{colored("Previous", 'grey',)} - {prev_solve}    {colored("PB", 'cyan')} - {single}    {colored("Ao5", 'blue')} - {ao5}    {colored("Ao12", 'blue')} - {ao12}")
     print(f"---------------------------------------------")
 
@@ -342,8 +341,12 @@ def print_data():
             print("dude how can you dnf a solve. smh")
         elif time_stats[0][0] == 2000:
             print("cmon really, +2s dont count at home")
-        else:
+        elif time_stats[0][0] < single:
+            print("New PB!! (it isn't WR so don't get too excited)")
+        elif time_stats[0][1] == 2000:
             print("okay you took the +2s dont count at home seriously didnt you")
+        else:
+            print()
 
     scramble = get_scramble()
     print()
