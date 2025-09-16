@@ -121,7 +121,7 @@ def timer_start():
     start_time = time.time()
     while solving:
         current_time = time.time()
-        print(round(current_time - start_time, 3), end="\r")
+        print(f"{' ' * 50}{round(current_time - start_time, 3)}{' ' * 50}", end="\r")
         time.sleep(0.01)
     result = current_time - start_time
     time_stats = [[0, int(result * 1000 / 10) * 10], [" ".join(scramble.copy())], "", int(datetime.datetime.now().timestamp())]
@@ -173,7 +173,7 @@ def on_press(key):
         if in_main:
             if not solving:
                 starting = True
-                print(colored("0.000", 'green'), end="\r")
+                print(f"{' ' * 50}{colored("0.000", 'green')}{' ' * 50}", end="\r")
                 return
             else:
                 solving = False
@@ -332,9 +332,9 @@ def print_data():
     if len(formatted_times) >= 12:
         ao12 = calculate_avgs(formatted_times, 12)
 
-    print(f"----------------- {colored(session, 'red')} === {colored(EVENT_NAMES[event_index], 'blue')} -------------------")
-    print(f"{colored("Previous", 'grey',)} - {prev_solve}    {colored("PB", 'cyan')} - {single}    {colored("Ao5", 'blue')} - {ao5}    {colored("Ao12", 'blue')} - {ao12}")
-    print(f"---------------------------------------------")
+    print(f"{'-' * 50} {colored(session, 'red')} === {colored(EVENT_NAMES[event_index], 'blue')} {'-' * 50}")
+    print(f"{' ' * 25} {colored("Previous", 'grey',)} - {prev_solve}    {colored("PB", 'cyan')} - {single}    {colored("Ao5", 'blue')} - {ao5}    {colored("Ao12", 'blue')} - {ao12} {' ' * 25}")
+    print("-" * (107 + int(len(session)) + int(len(EVENT_NAMES[event_index]))))
 
     if time_stats:
         if time_stats[0][0] == -1:
@@ -351,7 +351,7 @@ def print_data():
     scramble = get_scramble()
     print()
     print(colored(" ".join(scramble), 'yellow'))
-    print("\n0.000", end="\r")
+    print(f"\n{' ' * 50}0.000{' ' * 50}", end="\r")
 
 if __name__ == "__main__":
     try:
