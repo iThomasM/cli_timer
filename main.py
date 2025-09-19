@@ -9,7 +9,7 @@ from pyTwistyScrambler import (scrambler333, scrambler222, scrambler444,
                                 scrambler555, scrambler666, scrambler777,
                                 skewbScrambler, megaminxScrambler, squareOneScrambler, pyraminxScrambler)
 
-solve_file = "cstimer.json"
+solve_file = "solves.json"
 session_num = 1
 session = f"session{session_num}"
 solving = False
@@ -173,7 +173,7 @@ def on_press(key):
         if in_main:
             if not solving:
                 starting = True
-                print(f"{' ' * 50}{colored("0.000", 'green')}{' ' * 50}", end="\r")
+                print(f"{' ' * 50}{colored('0.000', 'green')}{' ' * 50}", end="\r")
                 return
             else:
                 solving = False
@@ -287,9 +287,10 @@ def help_menu():
     print("Up/Down -> Change event by one")
 
 def view_stats():
-    global prev_stats, in_main
+    global prev_stats, in_main, EVENT_NAMES, event_index
     in_main = False
     os.system('cls' if os.name == 'nt' else 'clear')
+    print(f"Event: {EVENT_NAMES[event_index]}")
     for i, solve in enumerate(prev_stats, 1):
         time = get_time(solve)
         if time is None:
@@ -332,9 +333,7 @@ def print_data():
     if len(formatted_times) >= 12:
         ao12 = calculate_avgs(formatted_times, 12)
 
-    print(f"{'-' * 50} {colored(session, 'red')} === {colored(EVENT_NAMES[event_index], 'blue')} {'-' * 50}")
-    print(f"{' ' * 25} {colored("Previous", 'grey',)} - {prev_solve}    {colored("PB", 'cyan')} - {single}    {colored("Ao5", 'blue')} - {ao5}    {colored("Ao12", 'blue')} - {ao12} {' ' * 25}")
-    print("-" * (107 + int(len(session)) + int(len(EVENT_NAMES[event_index]))))
+    print_header(prev_solve, ao5, ao12, single)
 
     if time_stats:
         if time_stats[0][0] == -1:
@@ -352,6 +351,11 @@ def print_data():
     print()
     print(colored(" ".join(scramble), 'yellow'))
     print(f"\n{' ' * 50}0.000{' ' * 50}", end="\r")
+
+def print_header(prev_solve, ao5, ao12, single):
+    print(f"{'-' * 50} {colored(session, 'red')} === {colored(EVENT_NAMES[event_index], 'blue')} {'-' * 50}")
+    print(f"{' ' * 25} {colored('Previous', 'grey',)} - {prev_solve if prev_solve else 'N/A'}    {colored('PB', 'cyan')} - {'N/A' if single == float('inf') else single}    {colored('Ao5', 'blue')} - {ao5 if ao5 else 'N/A'}    {colored('Ao12', 'blue')} - {ao12 if ao12 else 'N/A'} {' ' * 25}")
+    print("-" * (107 + int(len(session)) + int(len(EVENT_NAMES[event_index]))))
 
 if __name__ == "__main__":
     try:
