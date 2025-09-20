@@ -9,6 +9,7 @@ from pyTwistyScrambler import (scrambler333, scrambler222, scrambler444,
                                 scrambler555, scrambler666, scrambler777,
                                 skewbScrambler, megaminxScrambler, squareOneScrambler, pyraminxScrambler)
 
+
 solve_file = "solves.json"
 session_num = 1
 session = f"session{session_num}"
@@ -26,6 +27,8 @@ in_main = True
 time_check = False
 event = None
 choice = None
+reset_menu = False
+dumb_msg = None
 
 scramble_types = {None: scrambler333.get_WCA_scramble,
                   "222so": scrambler222.get_WCA_scramble,
@@ -87,6 +90,26 @@ def load_data(solve_file):
     else:
         times = []
 
+def reset():
+    global reset_menu, solve_file, session
+    if reset_menu:
+        try:
+            with open(solve_file) as f:
+                data = json.load(f)
+        except:
+            data = {}
+
+        data[session] = []
+
+        with open(solve_file, 'w') as f:
+            json.dump(data, f, indent=4)
+        
+        load_data(solve_file)
+        print_data()
+    else:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("Reset Session? -> r\nCancel -> e")
+
 # // Properties Handling
 
 def properties(data):
@@ -122,7 +145,7 @@ def timer_start():
     while solving:
         current_time = time.time()
         print(f"{' ' * 50}{round(current_time - start_time, 3)}{' ' * 50}", end="\r")
-        time.sleep(0.01)
+        time.sleep(0.001)
     result = current_time - start_time
     time_stats = [[0, int(result * 1000 / 10) * 10], [" ".join(scramble.copy())], "", int(datetime.datetime.now().timestamp())]
 
@@ -168,7 +191,7 @@ def solve_check(time_stats, result):
 # // Key Listener
 
 def on_press(key):
-    global solving, starting, time_check, choice
+    global solving, starting, time_check, choice, reset_menu
     if key == keyboard.Key.space:
         if in_main:
             if not solving:
@@ -195,6 +218,9 @@ def on_press(key):
         change_event(-1)
 
     try:
+        if key.char == 'r':
+            reset_menu = not reset_menu
+            reset()
         if key.char == 'q':
             view_stats()
         if key.char == 'e':
@@ -282,6 +308,7 @@ def help_menu():
     print("\nGeneral:\n")
     print("e -> Return")
     print("q -> View Session Data")
+    print("r -> Reset Session")
     print("\nIn Main Menu:\n")
     print("Left/Right -> Change Session by one")
     print("Up/Down -> Change event by one")
@@ -336,19 +363,27 @@ def print_data():
     print_header(prev_solve, ao5, ao12, single)
 
     if time_stats:
+        global dumb_msg
+        dumb_msg = None
+        unformatted_times = [time for time in times[:-1] if time is not None]
+        unformatted_single = min(unformatted_times, default=None)
+
+        if unformatted_single is not None and time_stats[0][1] < unformatted_single:
+            dumb_msg = "New PB!! (it isn't WR so don't get too excited)"
         if time_stats[0][0] == -1:
-            print("dude how can you dnf a solve. smh")
+            dumb_msg = "dude how can you dnf a solve. smh"
         elif time_stats[0][0] == 2000:
-            print("cmon really, +2s dont count at home")
-        elif time_stats[0][0] < single:
-            print("New PB!! (it isn't WR so don't get too excited)")
-        elif time_stats[0][1] == 2000:
-            print("okay you took the +2s dont count at home seriously didnt you")
+            dumb_msg = "cmon really, +2s dont count at home"
         else:
-            print()
+            if len(prev_stats) > 1:
+                prev_s = prev_stats[-2]
+                if prev_s[0][0] == 2000:
+                    dumb_msg = "okay you took the +2s dont count at home seriously didnt you"
+
+    if dumb_msg:
+        print(dumb_msg)
 
     scramble = get_scramble()
-    print()
     print(colored(" ".join(scramble), 'yellow'))
     print(f"\n{' ' * 50}0.000{' ' * 50}", end="\r")
 
