@@ -4,13 +4,22 @@ import time
 import datetime
 import threading
 import os
+import sys
 from termcolor import colored
 from pyTwistyScrambler import (scrambler333, scrambler222, scrambler444,
                                 scrambler555, scrambler666, scrambler777,
                                 skewbScrambler, megaminxScrambler, squareOneScrambler, pyraminxScrambler)
 
+if len(sys.argv) > 1:
+    solve_file = str(sys.argv[1])
+    path = sys.argv[2] if len(sys.argv) > 2 else "C:/timerapp/"
+else: 
+    solve_file = "solves.json"
+    path = "C:/timerapp/"
 
-solve_file = "solves.json"
+os.makedirs(path, exist_ok=True)
+save_path = os.path.join(path, solve_file)
+
 session_num = 1
 session = f"session{session_num}"
 solving = False
@@ -46,7 +55,7 @@ scramble_types = {None: scrambler333.get_WCA_scramble,
 def save_data(time_stats):
     global solve_file
     try:
-        with open(solve_file) as f:
+        with open(save_path) as f:
             data = json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         data = {}
@@ -57,14 +66,14 @@ def save_data(time_stats):
     data[session].append(time_stats)
     prev_stats.append(time_stats)
 
-    with open(solve_file, "w") as f:
+    with open(save_path, "w") as f:
         json.dump(data, f, indent=4)
 
 
-def load_data(solve_file):
+def load_data(save_path):
     global times, event
     try:
-        with open(solve_file) as f:
+        with open(save_path) as f:
             data = json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
             data = {}
@@ -91,17 +100,17 @@ def load_data(solve_file):
         times = []
 
 def reset():
-    global reset_menu, solve_file, session
+    global reset_menu, session, save_path
     if reset_menu:
         try:
-            with open(solve_file) as f:
+            with open(save_path) as f:
                 data = json.load(f)
         except:
             data = {}
 
         data[session] = []
 
-        with open(solve_file, 'w') as f:
+        with open(save_path, 'w') as f:
             json.dump(data, f, indent=4)
         
         load_data(solve_file)
@@ -305,6 +314,8 @@ def help_menu():
     global in_main
     in_main = False
     os.system('cls' if os.name == 'nt' else 'clear')
+    print("\nCommand Line Arguments:\n")
+    print("[filename.json] [directory]")
     print("\nGeneral:\n")
     print("e -> Return")
     print("q -> View Session Data")
@@ -392,13 +403,12 @@ def print_header(prev_solve, ao5, ao12, single):
     print(f"{' ' * 25} {colored('Previous', 'grey',)} - {prev_solve if prev_solve else 'N/A'}    {colored('PB', 'cyan')} - {'N/A' if single == float('inf') else single}    {colored('Ao5', 'blue')} - {ao5 if ao5 else 'N/A'}    {colored('Ao12', 'blue')} - {ao12 if ao12 else 'N/A'} {' ' * 25}")
     print("-" * (107 + int(len(session)) + int(len(EVENT_NAMES[event_index]))))
 
+def main():
+    data = load_data(solve_file)
+    print_data()
+    listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+    listener.start()
+    listener.join()
+
 if __name__ == "__main__":
-    try:
-        data = load_data(solve_file)
-        print_data()
-        listener = keyboard.Listener(on_press=on_press, on_release=on_release)
-        listener.start()
-        listener.join()
-    except KeyboardInterrupt:
-        print("Exiting..")
-        os._exit(0)
+    main()
